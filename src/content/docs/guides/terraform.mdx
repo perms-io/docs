@@ -1,0 +1,158 @@
+---
+title: "Terraform provider"
+description: "Manage permissions, roles, groups, group members and grants as code with the perms-io/permio Terraform provider."
+---
+
+The [`perms-io/permio`](https://registry.terraform.io/providers/perms-io/permio/latest) provider manages a Permio
+project's authorisation model in Terraform: permissions, roles, groups and their members, and grants. Keep the
+model in version control, review changes in pull requests and apply the same model to every environment.
+
+- **Registry:** [registry.terraform.io/providers/perms-io/permio](https://registry.terraform.io/providers/perms-io/permio/latest)
+  (full reference for every resource and data source)
+- **Source:** [github.com/perms-io/terraform-provider-permio](https://github.com/perms-io/terraform-provider-permio) (Apache-2.0)
+- **Requires:** Terraform 1.0+ or OpenTofu
+- **Auth:** a full-access Permio [API key](/concepts/api-keys/) for the project
+
+## Install
+
+```terraform
+terraform {
+  required_providers {
+    permio = {
+      source  = "perms-io/permio"
+      version = "~> 0.1"
+    }
+  }
+}
+
+provider "permio" {
+  project = "my-app" # or PERMIO_PROJECT; defaults to "default"
+}
+```
+
+Then run `terraform init`.
+
+## Authenticate
+
+Create an API key in the [dashboard](https://app.perms.io) (project > **API Keys**) and pass it in the
+`PERMIO_API_KEY` environment variable rather than in configuration:
+
+```sh
+export PERMIO_API_KEY=perms_...
+terraform plan
+```
+
+- Creating, changing or deleting anything needs a **full-access** key. A **check-only** key is enough for the
+  data sources.
+- A key only works in the project it was created in, so the provider's `project` (and any resource's `project`)
+  must be the key's project.
+- The provider talks to `api.perms.io:443` by default. Set `api_url` (or `PERMIO_API_URL`) to use another address.
+
+## Example
+
+A permission, a role built from it, a team as a group, and a grant that every member of the team inherits on a
+workspace and everything below it:
+
+```terraform
+resource "permio_permission" "document_read" {
+  name        = "document.read"
+  description = "Read documents"
+}
+
+resource "permio_permission" "document_write" {
+  name        = "document.write"
+  description = "Create and edit documents"
+}
+
+resource "permio_role" "editor" {
+  name = "Editor"
+  permissions = [
+    permio_permission.document_read.name,
+    permio_permission.document_write.name,
+  ]
+}
+
+resource "permio_group" "engineering" {
+  name = "engineering"
+}
+
+resource "permio_group_members" "engineering" {
+  group   = permio_group.engineering.name
+  members = ["user_bob", "user_carol"]
+}
+
+# Every member of engineering can read and write everything in workspace acme.
+resource "permio_grant" "engineering_acme" {
+  principal = permio_group.engineering.principal # "group:engineering"
+  resource  = "/workspaces/acme"
+  roles     = [permio_role.editor.id]
+}
+```
+
+The [SaaS workspace guide](https://registry.terraform.io/providers/perms-io/permio/latest/docs/guides/saas-workspace)
+builds a complete model with several roles and teams, per-project grants, the `_` wildcard and policy tests.
+
+## Resources and data sources
+
+| Name | Manages |
+| --- | --- |
+| `permio_permission` | A permission, such as `document.read`. |
+| `permio_role` | A named set of permissions. Grants reference roles by ID (`permio_role.editor.id`). |
+| `permio_group` | A group. Its `principal` attribute (`group:<name>`) is what you grant to. |
+| `permio_group_members` | The complete member list of a group (authoritative). |
+| `permio_group_member` | One member of a group, for groups whose members are also managed elsewhere. |
+| `permio_grant` | The roles and permissions granted to one principal on one resource URI (authoritative for that pair). |
+| `permio_permission`, `permio_role`, `permio_group` (data) | Look up existing objects. |
+| `permio_check` (data) | Run a permission check, for policy tests. |
+
+## Things to know
+
+- **One `permio_grant` per principal and resource.** The resource manages everything granted directly to that
+  principal on exactly that URI, and revokes grants made there outside Terraform. Two resources for the same pair
+  would keep revoking each other's grants. Grants on other URIs, including ones inherited from above, are not
+  touched. See [resources and inheritance](/concepts/resources/).
+- **Don't mix the two membership resources** on one group: use `permio_group_members` for the whole list, or
+  `permio_group_member` for individual members.
+- **Changes made in the dashboard show up as drift.** The next `terraform plan` offers to put the managed objects
+  back as the configuration describes them.
+- **Users usually aren't managed in Terraform.** Principals are your own user IDs and appear when first granted.
+  Terraform suits the model (permissions and roles), teams and standing grants; grant per-user access from your
+  application with an [SDK](/api-reference/#clients).
+
+## Policy tests
+
+`permio_check` evaluates a check, so a `check` block can assert that the model does what you expect:
+
+```terraform
+data "permio_check" "support_cannot_manage_billing" {
+  principal   = "user_dave"
+  resource    = "/workspaces/acme"
+  permissions = ["billing.manage"]
+}
+
+check "workspace_policy" {
+  assert {
+    condition     = !data.permio_check.support_cannot_manage_billing.allowed
+    error_message = "Support must not be able to manage billing."
+  }
+}
+```
+
+Data sources are read during planning, so a check sees grants that already exist: run it on the plan after the
+first apply, or in a `terraform test` run.
+
+## Import existing objects
+
+Objects created in the dashboard or through the API can be brought under Terraform with `terraform import`:
+
+```sh
+terraform import permio_permission.document_read default/document.read
+terraform import permio_role.editor "default/Editor"
+terraform import permio_group.engineering default/engineering
+terraform import permio_group_members.engineering default/engineering
+terraform import permio_grant.engineering_acme "default|group:engineering|/workspaces/acme"
+```
+
+The first segment is the project. Grant IDs use `|` as the separator because principals and URIs can contain `/`.
+Each resource's page on the [registry](https://registry.terraform.io/providers/perms-io/permio/latest/docs) lists
+its import formats.

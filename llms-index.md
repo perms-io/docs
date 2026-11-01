@@ -18,6 +18,7 @@
 - [Plans and limits](https://docs.perms.io/concepts/plans-and-limits/): What counts as an active principal, billing periods, and how the Free plan's hard limit on new principals works.
 - [Filtering lists and building share dialogs](https://docs.perms.io/guides/filtering-and-sharing/): Using `listAccess` scopes to filter rows in PostgreSQL, Prisma or MongoDB, `batchCheck` for loaded rows, and `whoHasAccess` for share dialogs.
 - [MCP server](https://docs.perms.io/guides/mcp/): Connecting Claude Code, Cursor, VS Code or Claude Desktop to `https://mcp.perms.io/mcp` with an API key, the read-only endpoint, and the tools.
+- [Terraform provider](https://docs.perms.io/guides/terraform/): The `perms-io/permio` provider on the Terraform Registry: install, API key auth, permissions, roles, groups, members and grants as code, authoritative grants, `permio_check` policy tests and importing existing objects.
 
 ## API reference
 

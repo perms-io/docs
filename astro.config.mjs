@@ -78,6 +78,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Filtering lists and share dialogs', slug: 'guides/filtering-and-sharing' },
 						{ label: 'MCP server', slug: 'guides/mcp' },
+						{ label: 'Terraform provider', slug: 'guides/terraform' },
 					],
 				},
 				{

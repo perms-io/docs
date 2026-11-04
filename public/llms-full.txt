@@ -244,6 +244,8 @@ to check. See [Errors](https://docs.perms.io/api-reference/#errors).
 - [Resources and inheritance](https://docs.perms.io/concepts/resources/): design your resource URIs, and use the `_` wildcard.
 - [Groups](https://docs.perms.io/concepts/groups/): grant to a team once instead of to each user.
 - [TypeScript SDK](https://docs.perms.io/sdk/typescript/): `assert`, `checkAny`, error handling, and Express and Next.js examples.
+- Platform guides for [Supabase](https://perms.io/guides/supabase), [Firebase](https://perms.io/guides/firebase) and
+  [Next.js on Vercel](https://perms.io/guides/nextjs-vercel): where checks go, granting on create and filtering lists.
 - [API reference](https://docs.perms.io/api-reference/): every endpoint, for cURL, gRPC and the generated clients.
 
 ---

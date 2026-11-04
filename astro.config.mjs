@@ -82,6 +82,15 @@ export default defineConfig({
 					],
 				},
 				{
+					// Platform guides live on perms.io, so they build the main site's search ranking.
+					label: 'Platform guides',
+					items: [
+						{ label: 'Supabase', link: 'https://perms.io/guides/supabase' },
+						{ label: 'Firebase', link: 'https://perms.io/guides/firebase' },
+						{ label: 'Next.js on Vercel', link: 'https://perms.io/guides/nextjs-vercel' },
+					],
+				},
+				{
 					label: 'SDKs',
 					items: [
 						{ label: 'TypeScript', slug: 'sdk/typescript' },
